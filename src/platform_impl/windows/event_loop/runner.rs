@@ -7,7 +7,7 @@ use std::{
   cell::{Cell, RefCell},
   collections::{HashSet, VecDeque},
   mem, panic,
-  rc::Rc,
+  sync::Arc,
   time::Instant,
 };
 
@@ -24,7 +24,10 @@ use crate::{
   window::WindowId,
 };
 
-pub(crate) type EventLoopRunnerShared<T> = Rc<EventLoopRunner<T>>;
+// Consumers (tauri-runtime-wry) clone and drop this handle on non-main threads through their
+// unsafe-Send wrappers, so the refcount must be atomic. The runner's interior stays
+// main-thread-only. See https://github.com/tauri-apps/tauri/issues/15408.
+pub(crate) type EventLoopRunnerShared<T> = Arc<EventLoopRunner<T>>;
 pub(crate) struct EventLoopRunner<T: 'static> {
   // The event loop's win32 handles
   thread_msg_target: HWND,
